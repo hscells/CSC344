@@ -20,6 +20,9 @@ t_symbol *SQ_BRACE;
 
 t_symbol SYMBOLS[NUM_SYMBOLS];
 
+bool inside_comment = false;
+bool inside_string = false;
+
 char symbols_stack[STACK_SIZE];
 int current_stack = 0;
 int current_symbols = 0;
@@ -120,20 +123,34 @@ int main(int argc, char const *argv[]) {
       // and the end symbols are the same
       if (c == '\''){
 
-         if (sin_quotes == 0)
+         if (sin_quotes == 0) {
+
             sin_quotes++;
-         else
+            inside_string = true;
+
+         } else {
+
             sin_quotes = 0;
+            inside_string = false;
+
+         }
 
       } else if (c == '"'){
 
-         if (dub_quotes == 0)
+         if (dub_quotes == 0){
+
             dub_quotes++;
-         else
+            inside_string = true;
+
+         } else {
+
             dub_quotes = 0;
+            inside_string = false;
+
+         }
 
       // looking for identifiers. they must start with the valid characters
-      } else if (!reading_identifier && memchr(VALID_START_CHARS,c,sizeof(VALID_START_CHARS))){
+      } else if (!inside_comment && !inside_string && !reading_identifier && memchr(VALID_START_CHARS,c,sizeof(VALID_START_CHARS))){
 
          reading_identifier = true;
 
@@ -150,7 +167,7 @@ int main(int argc, char const *argv[]) {
 
       }
       // now we are free to look at the symbols that need matching
-      if (!reading_identifier) {
+      if (!inside_comment && !inside_string && !reading_identifier) {
 
          for (int i = 0; i < NUM_SYMBOLS; i++){
 
