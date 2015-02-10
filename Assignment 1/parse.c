@@ -117,7 +117,7 @@ int main(int argc, char const *argv[]) {
       pc++;
 
       // handle the pesky quotes. can't use the symbol structs because the start
-      // and the end symbols are the same :(
+      // and the end symbols are the same
       if (c == '\''){
 
          if (sin_quotes == 0)
@@ -148,8 +148,9 @@ int main(int argc, char const *argv[]) {
 
          }
 
+      }
       // now we are free to look at the symbols that need matching
-      } else {
+      if (!reading_identifier) {
 
          for (int i = 0; i < NUM_SYMBOLS; i++){
 
@@ -157,7 +158,7 @@ int main(int argc, char const *argv[]) {
 
                addSymbolToStack(SYMBOLS[i].end_symbol);
 
-            }else if(c == SYMBOLS[i].end_symbol){
+            } else if(c == SYMBOLS[i].end_symbol) {
 
                if (getTopSymbol() == c){
 
