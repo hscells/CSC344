@@ -23,6 +23,8 @@ t_symbol SYMBOLS[NUM_SYMBOLS];
 bool inside_comment = false;
 bool inside_string = false;
 
+int comment = 0;
+
 char symbols_stack[STACK_SIZE];
 int current_stack = 0;
 int current_symbols = 0;
@@ -121,7 +123,7 @@ int main(int argc, char const *argv[]) {
 
       // handle the pesky quotes. can't use the symbol structs because the start
       // and the end symbols are the same
-      if (c == '\''){
+      if (c == '\'' && !inside_comment){
 
          if (sin_quotes == 0) {
 
@@ -135,7 +137,7 @@ int main(int argc, char const *argv[]) {
 
          }
 
-      } else if (c == '"'){
+      } else if (c == '"' && !inside_comment){
 
          if (dub_quotes == 0){
 
@@ -200,6 +202,52 @@ int main(int argc, char const *argv[]) {
          }
 
       }
+
+      /*
+       * TODO
+       * fix this bug: /* /won't work *\/
+       *
+       *
+       */
+      // handle comments
+      if (c == '/' && !comment){
+
+         comment++;
+
+      } else if (c == '/' && comment == 1){
+
+         inside_comment = true;
+         comment++;
+
+      }
+      if ( c == '\n' && comment == 2){
+
+         inside_comment = false;
+         comment = 0;
+
+      }
+
+      if (c == '*' && comment == 1){
+
+         inside_comment = true;
+         comment+=2;
+
+      } else if (comment == 3 && c == '*'){
+
+         comment++;
+
+      } else if (comment == 4 && c == '/'){
+
+         inside_comment = false;
+         comment = 0;
+
+      } else if (comment == 1 && c != '/'){
+
+         comment = 0;
+
+      }
+
+      printf("%d",comment);
 
    }
 
