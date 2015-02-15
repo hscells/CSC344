@@ -61,9 +61,17 @@ t_symbol *addSymbol(char s, char e){
 
 void addSymbolToStack(char c){
 
-   symbols_stack[current_stack] = c;
-   current_stack++;
+   if (current_stack >= STACK_SIZE){
 
+      printf("Maximum depth has been reached.\n");
+      exit(EXIT_FAILURE);
+
+   } else {
+
+      symbols_stack[current_stack] = c;
+      current_stack++;
+
+   }
 }
 
 char getTopSymbol(){
