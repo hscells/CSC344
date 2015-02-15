@@ -83,19 +83,19 @@ void error(int type, char symbol, int location,int line, int line_pos){
 
    if (type == 0){
 
-      printf("%s%c%s%d%s%d%s%d","\nMissing end symbol (",symbol,") at location: ",location," Line ",line," character ",line_pos);
+      printf("%s%c%s%d%s%d%s%d","\nMissing end symbol (",symbol,") @ Line ",line,", position ",line_pos," #",location);
 
    } else if(type == 1) {
 
-      printf("%s%c%s%d%s%d%s%d","\nMissing start symbol for matching (",symbol,") at location: ",location," Line ",line," character ",line_pos);
+      printf("%s%c%s%d%s%d%s%d","\nMissing start symbol for matching (",symbol,") @ Line ",line,", position ",line_pos," #",location);
 
    } else if(type == 2) {
 
-      printf("%s%c%s%d%s%d%s%d","\nMismatched ending symbol (",symbol,") at location: ",location," Line ",line," character ",line_pos);
+      printf("%s%c%s%d%s%d%s%d","\nMismatched ending symbol (",symbol,") @ Line ",line,", position ",line_pos," #",location);
 
    } else if(type == 3) {
 
-      printf("%s%c%s%d%s%d%s%d","\nMismatched ",symbol," quote at location: ",location," Line ",line," character ",line_pos);
+      printf("%s%c%s%d%s%d%s%d","\nMismatched ",symbol," quote @ Line ",line,", position ",line_pos," #",location);
 
    }
 
