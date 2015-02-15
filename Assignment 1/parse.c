@@ -3,6 +3,9 @@
 #include <stdbool.h>
 #include <string.h>
 
+// pretty EOL
+#define EOL '\n'
+
 // stack to store the symbols
 #define STACK_SIZE 1024
 
@@ -24,6 +27,8 @@ bool inside_comment = false;
 bool inside_string = false;
 
 int comment = 0;
+
+int escaped_char = false;
 
 char symbols_stack[STACK_SIZE];
 int current_stack = 0;
@@ -74,19 +79,23 @@ void removeTopSymbol(){
 
 }
 
-void error(int type, char symbol, int location){
+void error(int type, char symbol, int location,int line, int line_pos){
 
    if (type == 0){
 
-      printf("%s%c%s%d","\nMissing end symbol (",symbol,") at location: ",location);
+      printf("%s%c%s%d%s%d%s%d","\nMissing end symbol (",symbol,") at location: ",location," Line ",line," character ",line_pos);
 
    } else if(type == 1) {
 
-      printf("%s%c%s%d","\nMissing start symbol for matching (",symbol,") at location: ",location);
+      printf("%s%c%s%d%s%d%s%d","\nMissing start symbol for matching (",symbol,") at location: ",location," Line ",line," character ",line_pos);
 
    } else if(type == 2) {
 
-      printf("%s%c%s%d","\nMismatched ending symbol (",symbol,") at location: ",location);
+      printf("%s%c%s%d%s%d%s%d","\nMismatched ending symbol (",symbol,") at location: ",location," Line ",line," character ",line_pos);
+
+   } else if(type == 3) {
+
+      printf("%s%c%s%d%s%d%s%d","\nMismatched ",symbol," quote at location: ",location," Line ",line," character ",line_pos);
 
    }
 
@@ -102,6 +111,11 @@ int main(int argc, char const *argv[]) {
    FILE *fp;
    int c;
    int i;
+
+   // line counter
+   int line = 1;
+   // line position counter
+   int line_pos = 0;
    // program counter
    int pc = 0;
 
@@ -119,11 +133,21 @@ int main(int argc, char const *argv[]) {
 
    while ((c = fgetc(fp)) != EOF)  {
 
-      pc++;
+      pc++; // increase the program counter
+      line_pos++;
 
-      // handle the pesky quotes. can't use the symbol structs because the start
-      // and the end symbols are the same
-      if (c == '\'' && !inside_comment){
+
+      if(escaped_char){
+
+         ; // Do absolutley nothing. The character is escaped.
+
+
+      /*
+       * handle the pesky quotes. can't use the symbol structs because the start
+       * and the end symbols are the same.
+       */
+      } else if (c == '\'' && !inside_comment && dub_quotes == 0){
+
 
          if (sin_quotes == 0) {
 
@@ -137,21 +161,25 @@ int main(int argc, char const *argv[]) {
 
          }
 
-      } else if (c == '"' && !inside_comment){
+      } else if (c == '"' && !inside_comment && sin_quotes == 0){
 
          if (dub_quotes == 0){
 
             dub_quotes++;
             inside_string = true;
 
-         } else {
+         }  else {
 
             dub_quotes = 0;
             inside_string = false;
 
          }
 
-      // looking for identifiers. they must start with the valid characters
+      /*
+       * looking for identifiers. they must start with the valid characters
+       * and we can't be looking at a comment, reading a string, or already
+       * looking at an identifier.
+       */
       } else if (!inside_comment && !inside_string && !reading_identifier && memchr(VALID_START_CHARS,c,sizeof(VALID_START_CHARS))){
 
          reading_identifier = true;
@@ -168,7 +196,12 @@ int main(int argc, char const *argv[]) {
          }
 
       }
-      // now we are free to look at the symbols that need matching
+      /*
+       * Now we are free to look at the symbols that need matching.
+       * When the pointer sees an opening symbol, it adds the closing symbol to
+       * the stack. If the next closing symbol it sees is not the symbol on the
+       * top of the stack, then we know there is an error.
+       */
       if (!inside_comment && !inside_string && !reading_identifier) {
 
          for (int i = 0; i < NUM_SYMBOLS; i++){
@@ -185,15 +218,15 @@ int main(int argc, char const *argv[]) {
 
                } else if (getTopSymbol() != c){
 
-                  error(2,c,pc);
+                  error(2,c,pc,line,line_pos);
 
                } else if (current_stack == 0){
 
-                  error(1,c,pc);
+                  error(1,c,pc,line,line_pos);
 
                } else {
 
-                  error(0,c,pc);
+                  error(0,c,pc,line,line_pos);
 
                }
 
@@ -204,12 +237,14 @@ int main(int argc, char const *argv[]) {
       }
 
       /*
-       * TODO
-       * fix this bug: /* /won't work *\/
-       *
-       *
+       * handle comments
+       * this got a little more messy and complicated that I would have liked,
+       * but it gets the job done.
+       * the comment variable keeps track of what character the pointer is up to
+       * and increases and decreases depending on what it sees.
+       * a value > 1 means the current characters are inside a comment and are
+       * ignored.
        */
-      // handle comments
       if (c == '/' && !comment){
 
          comment++;
@@ -245,28 +280,55 @@ int main(int argc, char const *argv[]) {
 
          comment = 0;
 
+      } else if (comment == 4 && c != '/'){
+
+         comment = 3;
+
       }
 
-      printf("%d",comment);
+      // uncomment to debug comments
+      // printf("%d",comment);
+
+      /*
+       * If a quote is being escaped, this will handle that
+       */
+      if (!inside_comment && c == '\\' && !escaped_char){
+
+         escaped_char = true;
+
+      } else {
+
+         escaped_char = false;
+
+      }
+
+      if (c == EOL) {
+
+         line++;
+         line_pos = 0;
+
+      }
 
    }
+
+   // we have hit EOF, but there could still be some issues inside.
 
    // finally, look for any missing opening symbols
    if (current_stack > 0){
 
-      error(0,getTopSymbol(),pc);
+      error(0,getTopSymbol(),pc,line,line_pos);
 
    }
 
    // also need to check quotes
    if (sin_quotes > 0){
 
-      error(0,'\'',pc);
+      error(0,'\'',pc,line,line_pos);
 
    }
    if (dub_quotes > 0){
 
-      error(0,'"',pc);
+      error(0,'"',pc,line,line_pos);
 
    }
 
