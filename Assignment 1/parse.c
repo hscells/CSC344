@@ -109,7 +109,11 @@ int main(int argc, char const *argv[]) {
    }
 
    FILE *fp;
-   int c;
+   // character currently being looked at
+   char c;
+   // previous character
+   char prev_c = '\0';
+   // loop iterator
    int i;
 
    // line counter
@@ -237,52 +241,35 @@ int main(int argc, char const *argv[]) {
       }
 
       /*
-       * handle comments
-       * this got a little more messy and complicated that I would have liked,
-       * but it gets the job done.
-       * the comment variable keeps track of what character the pointer is up to
-       * and increases and decreases depending on what it sees.
-       * a value > 1 means the current characters are inside a comment and are
-       * ignored.
+       * Handle comments
+       * Really nice and simple way to test if we are in a coment or not.
+       * Just look at the current char and the previous one.
        */
-      if (c == '/' && !comment){
-
-         comment++;
-
-      } else if (c == '/' && comment == 1){
+      if (!inside_comment && c == '/' && prev_c == '/' && comment == 0) {
 
          inside_comment = true;
-         comment++;
+         comment = 1;
 
       }
-      if ( c == '\n' && comment == 2){
+
+      if (inside_comment && c == '\n' && comment == 1) {
 
          inside_comment = false;
          comment = 0;
 
       }
 
-      if (c == '*' && comment == 1){
+      if (!inside_comment && c == '*' && prev_c == '/' && comment == 0) {
 
          inside_comment = true;
-         comment+=2;
+         comment = 2;
 
-      } else if (comment == 3 && c == '*'){
+      }
 
-         comment++;
-
-      } else if (comment == 4 && c == '/'){
+      if (inside_comment && c == '/' && prev_c == '*' && comment == 2) {
 
          inside_comment = false;
          comment = 0;
-
-      } else if (comment == 1 && c != '/'){
-
-         comment = 0;
-
-      } else if (comment == 4 && c != '/'){
-
-         comment = 3;
 
       }
 
@@ -308,6 +295,9 @@ int main(int argc, char const *argv[]) {
          line_pos = 0;
 
       }
+
+      // get the previous character
+      prev_c = c;
 
    }
 
