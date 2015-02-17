@@ -45,8 +45,8 @@ const char VALID_START_CHARS[] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h',
                                  'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F',
                                  'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
                                  'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V',
-                                 'W', 'X', 'Y', 'Z'};
-const char VALID_CHARS[] = {'1', '2', '3', '4', '5', '6', '7', '8', '9', '_'};
+                                 'W', 'X', 'Y', 'Z', '_'};
+const char VALID_CHARS[] = {'1', '2', '3', '4', '5', '6', '7', '8', '9'};
 
 t_symbol *addSymbol(char s, char e){
 
