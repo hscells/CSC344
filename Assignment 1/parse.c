@@ -10,7 +10,7 @@
 #define STACK_SIZE 1024
 
 // total number of symbols we are looking for
-#define NUM_SYMBOLS 5
+#define NUM_SYMBOLS 3
 
 typedef struct{
    char start_symbol;
@@ -104,6 +104,10 @@ void error(int type, char symbol, int location,int line, int line_pos){
    } else if(type == 3) {
 
       printf("%s%c%s%d%s%d%s%d","\nMismatched ",symbol," quote @ Line ",line,", position ",line_pos," #",location);
+
+   } else if(type == 4) {
+
+      printf("%s%c%s%d%s%d%s%d","\nMissing quote at symbol ",symbol," @ Line ",line,", position ",line_pos," #",location);
 
    }
 
@@ -297,7 +301,11 @@ int main(int argc, char const *argv[]) {
 
       }
 
-      if (c == EOL) {
+      if (c == EOL && inside_string) {
+
+         error(4,prev_c,pc,line,line_pos);
+
+      } else if( c == EOL){
 
          line++;
          line_pos = 0;
