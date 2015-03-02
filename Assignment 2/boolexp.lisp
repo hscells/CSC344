@@ -1,34 +1,49 @@
+;;; CSC344 Assignment 2
+;;; Harry Scells 2015
+
+;; Functions with -x are my own versions of already implemented functions in the
+;; common lisp library
+
+
+;; Basic setup of things which will be used for testing
 (setq p1 '(and x (or x (and y (not z)))))
 (setq p2 '(and (and z nil) (or x 1)))
 (setq p3 '(or 1 a))
 
+;; Copy and paste of given functions that need testing
 (defun andexp (e1 e2) (list 'and e1 e2))
 (defun orexp  (e1 e2) (list 'or e1 e2))
 (defun notexp (e1) (list 'not e1))
 
-(defun subst (target repalcement l)
+;; Re-implementation of the subst function
+(defun subst-x (target replacement l)
    (cond
       ((null l)
          nil
       )
       ((listp l)
-         (cons (subst target replacement (car l)) (subst target replacement (cdr l)))
+         (cons
+            (subst target replacement (car l))
+            (subst target replacement (cdr l)))
       )
       ((eq target (car l))
          (cons replacement (subst target replacement (cdr l)))
       )
       (t
-         (cons (car l) (subst target repalcement (cdr l)))
+         (cons (car l) (subst target replacement (cdr l)))
       )
    )
 )
 
+;; Bind multiple values into an expression
 (defun bind-values (exp bindings)
-   (lambda )
+   (mapcar #'subst-x ())
    )
 
+;; Simplify a boolean expression
 (defun simplify (exp)
    nil)
 
+;; Evaluate an expression with the given bindings
 (defun evalexp (exp bindings)
    (simplify (bind-values bindings exp)))
