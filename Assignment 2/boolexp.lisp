@@ -30,19 +30,35 @@
          (cons replacement (subst target replacement (cdr l)))
       )
       (t
-         (cons (car l) (subst target replacement (cdr l)))
-      )
-   )
-)
+         (cons (car l) (subst target replacement (cdr l))))))
 
 ;; Bind multiple values into an expression
 (defun bind-values (exp bindings)
-   (mapcar #'subst-x ())
    )
 
 ;; Simplify a boolean expression
 (defun simplify (exp)
-   nil)
+   (cond
+      ((null exp) nil)
+      ((atom exp) exp)
+      ((eq (car exp) 'or) (oreval (list (car exp) (simplify (cadr exp)) (simplify (caddr exp)))))
+      ((eq (car exp) 'and) (andeval (list (car exp) (simplify (cadr exp)) (simplify (caddr exp)))))
+      ((eq (car exp) 'not) (noteval (list (car exp) (simplify (cadr exp)) (simplify (caddr exp)))))))
+
+(defun noteval (exp)
+   (cond
+      ((eq (second exp) nil) t)
+      (t nil)))
+
+(defun oreval (exp)
+   (cond
+      ((eq (or (second exp) (third exp)) nil) nil)
+      (t t)))
+
+(defun andeval (exp)
+   (cond
+      ((eq (and (second exp) (third exp)) nil) nil)
+      (t t)))
 
 ;; Evaluate an expression with the given bindings
 (defun evalexp (exp bindings)
