@@ -27,14 +27,15 @@
             (subst target replacement (cdr l)))
       )
       ((eq target (car l))
-         (cons replacement (subst target replacement (cdr l)))
+         (cons replacement (subst-x target replacement (cdr l)))
       )
       (t
-         (cons (car l) (subst target replacement (cdr l))))))
+         (cons (car l) (subst-x target replacement (cdr l))))))
 
 ;; Bind multiple values into an expression
 (defun bind-values (exp bindings)
-   )
+   (dolist (l bindings)
+      (setf exp (subst-x (cadr l) (car l) exp)))exp)
 
 ;; Simplify a boolean expression
 (defun simplify (exp)
@@ -62,4 +63,4 @@
 
 ;; Evaluate an expression with the given bindings
 (defun evalexp (exp bindings)
-   (simplify (bind-values bindings exp)))
+   (simplify (bind-values exp bindings)))
