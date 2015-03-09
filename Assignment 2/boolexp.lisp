@@ -54,13 +54,16 @@
 (defun oreval (exp)
    (cond
       ((eq (or (second exp) (third exp)) nil) nil)
-      (t t)))
+      (t (or (second exp) (third exp)))))
 
 (defun andeval (exp)
    (cond
       ((eq (and (second exp) (third exp)) nil) nil)
-      (t t)))
+      (t
+         (cond
+            ((eq (second exp) (third exp)) (third exp))
+            ((not (eq (second exp) (third exp))) nil)))))
 
 ;; Evaluate an expression with the given bindings
 (defun evalexp (exp bindings)
-   (simplify (bind-values exp bindings)))
+   (simplify (bind-values exp bindings )))
