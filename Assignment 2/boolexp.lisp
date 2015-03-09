@@ -7,8 +7,8 @@
 
 ;; Basic setup of things which will be used for testing
 (setq p1 '(and x (or x (and y (not z)))))
-(setq p2 '(and (and z nil) (or x 1)))
-(setq p3 '(or 1 a))
+(setq p2 '(and (and z nil) (or x t)))
+(setq p3 '(or t a))
 
 ;; Copy and paste of given functions that need testing
 (defun andexp (e1 e2) (list 'and e1 e2))
@@ -35,16 +35,43 @@
 ;; Bind multiple values into an expression
 (defun bind-values (exp bindings)
    (dolist (l bindings)
-      (setf exp (subst-x (cadr l) (car l) exp)))exp)
+      (setf exp (subst-x (cadr l) (car l) exp))) exp)
 
 ;; Simplify a boolean expression
 (defun simplify (exp)
    (cond
       ((null exp) nil)
       ((atom exp) exp)
-      ((eq (car exp) 'or) (oreval (list (car exp) (simplify (cadr exp)) (simplify (caddr exp)))))
-      ((eq (car exp) 'and) (andeval (list (car exp) (simplify (cadr exp)) (simplify (caddr exp)))))
-      ((eq (car exp) 'not) (noteval (list (car exp) (simplify (cadr exp)) (simplify (caddr exp)))))))
+      ((eq (car exp) 'or)
+         (cond
+            ((and (listp (cadr exp)) (listp (caddr exp)))
+               (oreval (list (car exp) (simplify (cadr exp)) (simplify (caddr exp)))))
+            ((listp (cadr exp))
+               (oreval (list (car exp) (simplify (cadr exp)) (caddr exp))))
+            ((listp (caddr exp))
+               (oreval (list (car exp) (cadr exp) (simplify (caddr exp)))))
+            (t
+               (oreval (list (car exp) (cadr exp) (caddr exp))))))
+      ((eq (car exp) 'and)
+         (cond
+            ((and (listp (cadr exp)) (listp (caddr exp)))
+               (andeval (list (car exp) (simplify (cadr exp)) (simplify (caddr exp)))))
+            ((listp (cadr exp))
+               (andeval (list (car exp) (simplify (cadr exp)) (caddr exp))))
+            ((listp (caddr exp))
+               (andeval (list (car exp) (cadr exp) (simplify (caddr exp)))))
+            (t
+               (andeval (list (car exp) (cadr exp) (caddr exp))))))
+      ((eq (car exp) 'not)
+         (cond
+            ((and (listp (cadr exp)) (listp (caddr exp)))
+               (noteval (list (car exp) (simplify (cadr exp)) (simplify (caddr exp)))))
+            ((listp (cadr exp))
+               (noteval (list (car exp) (simplify (cadr exp)) (caddr exp))))
+            ((listp (caddr exp))
+               (noteval (list (car exp) (cadr exp) (simplify (caddr exp)))))
+            (t
+               (noteval (list (car exp) (cadr exp) (caddr exp))))))))
 
 (defun noteval (exp)
    (cond
