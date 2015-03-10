@@ -69,16 +69,20 @@
          (cond
             ((eq (caadr exp) 'and)
                (return-from noteval
-                  (list 'or (list 'not (cadr (cadr exp))) (list 'not (caddr (cadr exp))))))
+                  (simplify (list 'or (list 'not (cadr (cadr exp))) (list 'not (caddr (cadr exp)))))))
             ((eq (caadr exp) 'or)
                (return-from noteval
-                  (list 'and (list 'not (cadr (cadr exp))) (list 'not (caddr (cadr exp))))))))
+                  (simplify (list 'and (list 'not (cadr (cadr exp))) (list 'not (caddr (cadr exp)))))))))
       (t exp)))
 
 (defun oreval (exp)
    (cond
       ((and (not (null (second exp))) (null (third exp))) (second exp))
       ((and (not (null (third exp))) (null (second exp))) (third exp))
+      ((eq (second exp) t) t)
+      ((eq (third exp) t) t)
+      ((eq (second exp) 1) 1)
+      ((eq (third exp) 1) 1)
       ((eq (second exp) (third exp)) (second exp))
       ((and (null (second exp)) (null (third exp))) nil)
       (t exp)))
@@ -88,8 +92,26 @@
       ((null (second exp)) nil)
       ((null (third exp)) nil)
       ((eq (second exp) (third exp)) (third exp))
+      ((and (not (null (second exp))) (eq (third exp) t)) (second exp))
+      ((and (not (null (third exp))) (eq (second exp) t)) (third exp))
+      ((and (not (null (second exp))) (eq (third exp) 1)) (second exp))
+      ((and (not (null (third exp))) (eq (second exp) 1)) (third exp))
       (t exp)))
 
 ;; Evaluate an expression with the given bindings
 (defun evalexp (exp bindings)
    (simplify (bind-values exp bindings )))
+
+(defun run-tests ()
+   (format t "~S~%" (simplify '(or x nil)))
+   (format t "~S~%" (simplify '(or nil x)))
+   (format t "~S~%" (simplify '(or 1 x)))
+   (format t "~S~%" (simplify '(or x 1)))
+   (format t "~S~%" (simplify '(and x nil)))
+   (format t "~S~%" (simplify '(and nil x)))
+   (format t "~S~%" (simplify '(and x 1)))
+   (format t "~S~%" (simplify '(and 1 x)))
+   (format t "~S~%" (simplify '(not nil)))
+   (format t "~S~%" (simplify '(not 1)))
+   (format t "~S~%" (simplify '(not (and x y))))
+   (format t "~S~%" (simplify '(not (or x y)))))
