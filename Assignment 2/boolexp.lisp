@@ -37,6 +37,7 @@
 (defun simplify (exp)
    (cond
       ((null exp) nil)
+      ((atom exp) exp)
       ((eq (car exp) 'or)
          (cond
             ((and (listp (cadr exp)) (listp (caddr exp)))
