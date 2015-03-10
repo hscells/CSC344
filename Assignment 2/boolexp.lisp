@@ -18,17 +18,13 @@
 ;; Re-implementation of the subst function
 (defun subst-x (target replacement l)
    (cond
-      ((null l)
-         nil
-      )
+      ((null l) nil)
       ((listp l)
          (cons
             (subst target replacement (car l))
-            (subst target replacement (cdr l)))
-      )
+            (subst target replacement (cdr l))))
       ((eq target (car l))
-         (cons replacement (subst-x target replacement (cdr l)))
-      )
+         (cons replacement (subst-x target replacement (cdr l))))
       (t
          (cons (car l) (subst-x target replacement (cdr l))))))
 
@@ -41,7 +37,6 @@
 (defun simplify (exp)
    (cond
       ((null exp) nil)
-      ((atom exp) exp)
       ((eq (car exp) 'or)
          (cond
             ((and (listp (cadr exp)) (listp (caddr exp)))
@@ -51,7 +46,7 @@
             ((listp (caddr exp))
                (oreval (list (car exp) (cadr exp) (simplify (caddr exp)))))
             (t
-               (oreval (list (car exp) (cadr exp) (caddr exp))))))
+               (oreval exp))))
       ((eq (car exp) 'and)
          (cond
             ((and (listp (cadr exp)) (listp (caddr exp)))
@@ -61,35 +56,39 @@
             ((listp (caddr exp))
                (andeval (list (car exp) (cadr exp) (simplify (caddr exp)))))
             (t
-               (andeval (list (car exp) (cadr exp) (caddr exp))))))
+               (andeval exp))))
       ((eq (car exp) 'not)
-         (cond
-            ((and (listp (cadr exp)) (listp (caddr exp)))
-               (noteval (list (car exp) (simplify (cadr exp)) (simplify (caddr exp)))))
-            ((listp (cadr exp))
-               (noteval (list (car exp) (simplify (cadr exp)) (caddr exp))))
-            ((listp (caddr exp))
-               (noteval (list (car exp) (cadr exp) (simplify (caddr exp)))))
-            (t
-               (noteval (list (car exp) (cadr exp) (caddr exp))))))))
+         (noteval exp))))
 
 (defun noteval (exp)
    (cond
       ((eq (second exp) nil) t)
-      (t nil)))
+      ((eq (second exp) t) nil)
+      ((eq (second exp) 1) nil)
+      ((listp (second exp))
+         (cond
+            ((eq (caadr exp) 'and)
+               (return-from noteval
+                  (list 'or (list 'not (cadr (cadr exp))) (list 'not (caddr (cadr exp))))))
+            ((eq (caadr exp) 'or)
+               (return-from noteval
+                  (list 'and (list 'not (cadr (cadr exp))) (list 'not (caddr (cadr exp))))))))
+      (t exp)))
 
 (defun oreval (exp)
    (cond
-      ((eq (or (second exp) (third exp)) nil) nil)
-      (t (or (second exp) (third exp)))))
+      ((and (not (null (second exp))) (null (third exp))) (second exp))
+      ((and (not (null (third exp))) (null (second exp))) (third exp))
+      ((eq (second exp) (third exp)) (second exp))
+      ((and (null (second exp)) (null (third exp))) nil)
+      (t exp)))
 
 (defun andeval (exp)
    (cond
-      ((eq (and (second exp) (third exp)) nil) nil)
-      (t
-         (cond
-            ((eq (second exp) (third exp)) (third exp))
-            ((not (eq (second exp) (third exp))) nil)))))
+      ((null (second exp)) nil)
+      ((null (third exp)) nil)
+      ((eq (second exp) (third exp)) (third exp))
+      (t exp)))
 
 ;; Evaluate an expression with the given bindings
 (defun evalexp (exp bindings)
