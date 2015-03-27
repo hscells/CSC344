@@ -1,49 +1,80 @@
-class ListExpression(exp: String){
+import scala.collection.mutable.ArrayBuffer
 
-   def toArray(): Array[Unit]={
+class SexpParser(){
+
+   def parse(exp: String): ArrayBuffer[ArrayBuffer[String]] ={
 
       var depth = -1;
-      var last_depth = depth;
-      var arr = Array[Unit]();
-      for (c <- exp.replace("("," ( ").replace(")"," ) ").split(" +")){
-         println(c);
-         if (c == "(") {
-            depth+=1;
-            arr(depth) = Array[Unit]();
-         } else if (c == ")") depth-=1;
+      var pos = 0;
+      var internal_pos = 0;
 
-         if (last_depth == depth){
-            arr(depth) :+ c;
+      var last_depth = depth;
+      var arr = new ArrayBuffer[ArrayBuffer[String]];
+
+      for (c <- exp.replace("("," ( ").replace(")"," ) ").trim.split(" +")){
+         println(c + "," + depth)
+         if (c == "(") {
+
+            depth+= 1 + pos;
+            arr += new ArrayBuffer[String];
+            arr(depth) += s"{d$depth:p$internal_pos}";
+
+         } else if (c == ")"){
+
+            internal_pos = 0;
+            depth-=1;
+            pos+=1;
+
+         } else {
+
+            internal_pos += 1;
+            arr(depth) += c;
+
          }
-         
-         println(depth);
+
          last_depth = depth;
 
       }
 
+      //println(arr);
       return arr;
-
-   }
-
-   override def toString(): String={
-
-      return exp;
 
    }
 
 }
 
+
+class Sexpression(exp: ArrayBuffer[ArrayBuffer[String]]){
+
+   override def toString(): String={
+
+      var result = "( ";
+      for (l <- exp){
+
+         result += l + " ";
+
+      }
+      result+=")";
+      return result;
+
+   }
+
+}
+
+
 object BoolExp{
 
    def main(args: Array[String]){
 
-      var p1 = new ListExpression("(and (or x y) y)");
-      evalExp(p1,new ListExpression("()"));
+      var parser = new SexpParser()
+
+      var p1 = new Sexpression(parser.parse("(and (not x) (not y))"));
+      evalExp(p1,new Sexpression(parser.parse("()")));
 
    }
 
 
-   def substituteExp(exp: String, bindings: ListExpression){
+   def substituteExp(exp: String, bindings: Sexpression){
 
 
 
@@ -93,14 +124,15 @@ object BoolExp{
     * Evaluate any expression
     * @type {expression}
     */
-   def evalExp(exp: ListExpression, bindings: ListExpression){
+   def evalExp(exp: Sexpression, bindings: Sexpression){
 
-      println(exp.toArray().mkString(","));
-      substituteExp(exp.toString(),bindings);
+      println(exp.toString());
+      //substituteExp(exp.toString(),bindings);
 
    }
 
    def evalList(exp: String){
+
 
 
    }
