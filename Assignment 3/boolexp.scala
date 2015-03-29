@@ -106,13 +106,14 @@ case class SExp(iexp : String) extends SExpList{
 
    def third(): SExp={
 
-      return cdr.cdr;
+      return cdr.cdr.car;
 
    }
 
    def cdr(): SExp={
 
-      return new SExp("( " + exp.replaceFirst(car.toString,"") + " )");
+      //println(exp.replaceFirst(car.toString,"").replace("()",""))
+      return new SExp("( " + exp.replaceFirst(car.toString,"").replace("()","") + " )");
 
    }
 
@@ -123,22 +124,21 @@ object BoolExp{
    def main(args: Array[String]){
 
       var p1 = SExp("(and x (or x (and y (not z))))");
-      val p2 = SExp("(and x (and x y))");
+      val p2 = SExp("(and x z)");
 
-      evalExp(p1,new SExp("( (x t) (y nil) )"));
+      evalExp(p2,new SExp("( (x t) (y nil) (z t))"));
 
    }
 
 
    def substituteExp(exp: SExp, bindings: SExp): SExp={
 
-      if (bindings.toString() == "( ( ) )"){
+      if (bindings.toString() == "( )"){
 
          return exp;
 
       } else {
 
-         println(exp.toString)
          if(bindings.first.toString != "b")
             return substituteExp(new SExp(exp.toString().replace(bindings.first.first.toString,bindings.first.second.toString)),bindings.cdr);
          return substituteExp(exp,bindings.cdr);
