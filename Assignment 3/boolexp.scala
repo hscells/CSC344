@@ -73,7 +73,7 @@ case class SExp(iexp : String) extends SExpList{
 
    }
 
-   def indexOf(index: Int): SExp={
+   private def indexOf(index: Int): SExp={
 
       var c = new SExp(exp.split(" +")(index));
       if (c.toString()(0) == '('){
@@ -106,7 +106,7 @@ case class SExp(iexp : String) extends SExpList{
 
    def third(): SExp={
 
-      return new SExp(( "(" + exp.replaceFirst(first().toString(),"") + " )").replaceFirst(first().toString(),"")).second();
+      return new SExp("(" + exp.replaceFirst(first().toString(),"").split(" +").mkString(" ") + " )").second();
 
    }
 
@@ -123,6 +123,8 @@ object BoolExp{
    def main(args: Array[String]){
 
       var p1 = SExp("(and x (or x (and y (not z))))");
+      val p2 = SExp("(and x (and x y))");
+
       evalExp(p1,new SExp("()"));
 
    }
