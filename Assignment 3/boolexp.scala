@@ -94,25 +94,25 @@ case class SExp(iexp : String) extends SExpList{
 
    def first(): SExp={
 
-      return car();
+      return car;
 
    }
 
    def second(): SExp={
 
-      return new SExp("(" + exp.replaceFirst(first().toString(),"").split(" +").mkString(" ") + " )").first();
+      return cdr.car;
 
    }
 
    def third(): SExp={
 
-      return new SExp("(" + exp.replaceFirst(first().toString(),"").split(" +").mkString(" ") + " )").second();
+      return cdr.cdr;
 
    }
 
    def cdr(): SExp={
 
-      return new SExp("( " + exp.replaceFirst(first().toString(),"") + " )");
+      return new SExp("( " + exp.replaceFirst(car.toString,"") + " )");
 
    }
 
@@ -125,14 +125,24 @@ object BoolExp{
       var p1 = SExp("(and x (or x (and y (not z))))");
       val p2 = SExp("(and x (and x y))");
 
-      evalExp(p1,new SExp("()"));
+      evalExp(p1,new SExp("( (x t) (y nil) )"));
 
    }
 
 
-   def substituteExp(exp: String, bindings: SExp){
+   def substituteExp(exp: SExp, bindings: SExp): SExp={
 
+      if (bindings.toString() == "( ( ) )"){
 
+         return exp;
+
+      } else {
+
+         println(exp.toString)
+         if(bindings.first.toString != "b")
+            return substituteExp(new SExp(exp.toString().replace(bindings.first.first.toString,bindings.first.second.toString)),bindings.cdr);
+         return substituteExp(exp,bindings.cdr);
+      }
 
    }
 
@@ -140,7 +150,7 @@ object BoolExp{
     * Simplify an expression
     * @type {expression}
     */
-   private def simplify(exp: Array[String]){
+   private def simplify(exp: SExp){
 
 
 
@@ -150,7 +160,7 @@ object BoolExp{
     * Evaluate an or expression
     * @type {expression}
     */
-   private def orEval(exp: Array[String]){
+   private def orEval(exp: SExp){
 
 
 
@@ -160,7 +170,7 @@ object BoolExp{
     * Evaluate an and expression
     * @type {expression}
     */
-   private def andEval(exp: Array[String]){
+   private def andEval(exp: SExp){
 
 
 
@@ -170,7 +180,7 @@ object BoolExp{
     * Evaluate a not expression
     * @type {expression}
     */
-   private def notEval(exp: Array[String]){
+   private def notEval(exp: SExp){
 
 
 
@@ -182,16 +192,7 @@ object BoolExp{
     */
    def evalExp(exp: SExp, bindings: SExp){
 
-      println(exp);
-      println()
-      println(exp.first)
-      println(exp.second)
-      println(exp.third)
-      println()
-      println(exp.third.first)
-      println(exp.third.second)
-      println(exp.third.third)
-      //substituteExp(exp.toString(),bindings);
+      println(substituteExp(exp,bindings));
 
    }
 
