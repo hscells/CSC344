@@ -1,80 +1,134 @@
-import scala.collection.mutable.ArrayBuffer
+abstract class SExpList{
 
-class SexpParser(){
-
-   def parse(exp: String): ArrayBuffer[ArrayBuffer[String]] ={
-
-      var depth = -1;
-      var pos = 0;
-      var internal_pos = 0;
-
-      var last_depth = depth;
-      var arr = new ArrayBuffer[ArrayBuffer[String]];
-
-      for (c <- exp.replace("("," ( ").replace(")"," ) ").trim.split(" +")){
-         println(c + "," + depth)
-         if (c == "(") {
-
-            depth+= 1 + pos;
-            arr += new ArrayBuffer[String];
-            arr(depth) += s"{d$depth:p$internal_pos}";
-
-         } else if (c == ")"){
-
-            internal_pos = 0;
-            depth-=1;
-            pos+=1;
-
-         } else {
-
-            internal_pos += 1;
-            arr(depth) += c;
-
-         }
-
-         last_depth = depth;
-
-      }
-
-      //println(arr);
-      return arr;
-
-   }
+   def isList : Boolean
 
 }
 
+case class SExp(iexp : String) extends SExpList{
 
-class Sexpression(exp: ArrayBuffer[ArrayBuffer[String]]){
+   val str_exp = iexp.replace("("," ( ").replace(")"," ) ").trim.split(" +").mkString(" ");
+   val exp = if (str_exp.length > 0) str_exp.dropRight(1).reverse.dropRight(1).reverse.trim else str_exp;
+
+   override def isList: Boolean={
+
+      if (exp.length > 0 & exp(0) == '('){
+
+         return true;
+
+      }
+
+      return false;
+
+   }
 
    override def toString(): String={
 
-      var result = "( ";
-      for (l <- exp){
+      return str_exp;
 
-         result += l + " ";
+   }
+
+   def length(): Int={
+
+      return exp.length;
+
+   }
+
+   def getRest(start: Int): String={
+
+      var depth = 0;
+      var result = "";
+
+      if (exp(start) != '('){
+
+         println("getRest must start with a '('");
+         return ""
 
       }
-      result+=")";
-      return result;
+
+      for( i <- start until length()){
+
+         result += exp(i);
+
+         if (exp(i+1) == '('){
+
+            depth += 1;
+
+         } else if (exp(i+1) == ')'){
+
+            if (depth == 0){
+
+               return result + ")";
+
+            } else {
+
+               depth -= 1;
+
+            }
+
+         }
+
+      }
+
+      return "invalid list";
+
+   }
+
+   def indexOf(index: Int): SExp={
+
+      var c = new SExp(exp.split(" +")(index));
+      if (c.toString()(0) == '('){
+
+         return new SExp(getRest(index));
+
+      }
+
+      return c;
+
+   }
+
+   def car(): SExp={
+
+      return indexOf(0);
+
+   }
+
+   def first(): SExp={
+
+      return car();
+
+   }
+
+   def second(): SExp={
+
+      return new SExp("(" + exp.replaceFirst(first().toString(),"").split(" +").mkString(" ") + " )").first();
+
+   }
+
+   def third(): SExp={
+
+      return new SExp(( "(" + exp.replaceFirst(first().toString(),"") + " )").replaceFirst(first().toString(),"")).second();
+
+   }
+
+   def cdr(): SExp={
+
+      return new SExp("( " + exp.replaceFirst(first().toString(),"") + " )");
 
    }
 
 }
-
 
 object BoolExp{
 
    def main(args: Array[String]){
 
-      var parser = new SexpParser()
-
-      var p1 = new Sexpression(parser.parse("(and (not x) (not y))"));
-      evalExp(p1,new Sexpression(parser.parse("()")));
+      var p1 = SExp("(and x (or x (and y (not z))))");
+      evalExp(p1,new SExp("()"));
 
    }
 
 
-   def substituteExp(exp: String, bindings: Sexpression){
+   def substituteExp(exp: String, bindings: SExp){
 
 
 
@@ -124,9 +178,17 @@ object BoolExp{
     * Evaluate any expression
     * @type {expression}
     */
-   def evalExp(exp: Sexpression, bindings: Sexpression){
+   def evalExp(exp: SExp, bindings: SExp){
 
-      println(exp.toString());
+      println(exp);
+      println()
+      println(exp.first)
+      println(exp.second)
+      println(exp.third)
+      println()
+      println(exp.third.first)
+      println(exp.third.second)
+      println(exp.third.third)
       //substituteExp(exp.toString(),bindings);
 
    }
