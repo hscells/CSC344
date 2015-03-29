@@ -153,9 +153,10 @@ object BoolExp{
 
       var p1 = SExp("(and x (or x (and y (not z))))");
       val p2 = SExp("(or (or nil y) (or (or x x) (or d nil)))");
+      val p3 = SExp("(or a (and b c))");
 
-      //println(evalExp(p1,new SExp("( (x nil) (z 1) )")));
-      runTests
+      println(evalExp(p3,new SExp("()")));
+      //runTests
 
    }
 
@@ -284,6 +285,32 @@ object BoolExp{
          return new SExp("t");
 
       } else {
+
+         return exp;
+
+      }
+
+   }
+
+   private def evaluateCNF(exp: SExp): SExp={
+
+      if (exp.isEmpty){
+
+         return exp;
+
+      } else if (exp.second.isList){
+
+         return evaluateCNF(exp.second);
+
+      } else if (exp.third.isList){
+
+         return evaluateCNF(exp.second);
+
+      } else if (!exp.second.isList && exp.first.toString.toLowerCase == "or"){
+
+         return new SExp("(" + exp.second.toString + exp.first.toString + exp.cdr.cdr);
+
+      } else{
 
          return exp;
 
