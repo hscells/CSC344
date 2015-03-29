@@ -7,9 +7,9 @@ abstract class Expression{
 
 }
 
-case class SExp(iexp : String) extends Expression{
+case class SExp(sexp : String) extends Expression{
 
-   val str_exp = iexp.replace("("," ( ").replace(")"," ) ").trim.split(" +").mkString(" ");
+   val str_exp = sexp.replace("("," ( ").replace(")"," ) ").trim.split(" +").mkString(" ");
    val exp = if (str_exp.length > 0) str_exp.dropRight(1).reverse.dropRight(1).reverse.trim else str_exp;
 
    override def isList: Boolean={
@@ -54,11 +54,28 @@ case class SExp(iexp : String) extends Expression{
 
    }
 
-
    override def toString(): String={
 
       return str_exp;
 
+   }
+
+   def toAtom(): SExp={
+
+      return new SExp(exp);
+
+   }
+
+   def toInfix(): InfixExp={
+
+      return (
+         if (first.toString != "not")
+            (new InfixExp("(" +
+               (if (second.isList) second.toInfix else second.toString) + " " +
+               first.toString + " " +
+               (if (cdr.cdr.toAtom.isList) cdr.cdr.toAtom.toInfix else cdr.cdr.toAtom.toString) + ")"))
+         else (new InfixExp(exp))
+      )
    }
 
    private def getRest(start: Int): String={
@@ -140,8 +157,17 @@ case class SExp(iexp : String) extends Expression{
 
    def cdr(): SExp={
 
-      //println(exp.replaceFirst(car.toString,"").replace("()",""))
       return new SExp("( " + exp.replaceFirst(car.toString,"").replace("()","") + " )");
+
+   }
+
+}
+
+class InfixExp(sexp: String) extends SExp(sexp: String){
+
+   override def toString(): String={
+
+      return str_exp;
 
    }
 
@@ -153,9 +179,9 @@ object BoolExp{
 
       var p1 = SExp("(and x (or x (and y (not z))))");
       val p2 = SExp("(or (or nil y) (or (or x x) (or d nil)))");
-      val p3 = SExp("(or a (and b c))");
+      val p3 = SExp("(or a (or a b))");
 
-      println(evalExp(p3,new SExp("()")));
+      println("final evaluation: " + evalCNF(evalExp(p1,new SExp("()")).toInfix));
       //runTests
 
    }
@@ -292,25 +318,26 @@ object BoolExp{
 
    }
 
-   private def evaluateCNF(exp: SExp): SExp={
+   private def evalCNF(exp: InfixExp): InfixExp={
 
       if (exp.isEmpty){
 
          return exp;
 
-      } else if (exp.second.isList){
+      } else if (exp.isList){
 
-         return evaluateCNF(exp.second);
+         if(exp.first.toString == "or"){
 
-      } else if (exp.third.isList){
+            println(exp.cdr.cdr.toAtom)
+            return evalCNF(new InfixExp("( " + exp.second.toString + " " + exp.first.toString + " " + exp.cdr.cdr.toAtom.toString + ")"))
 
-         return evaluateCNF(exp.second);
+         } else {
 
-      } else if (!exp.second.isList && exp.first.toString.toLowerCase == "or"){
+            return exp;
 
-         return new SExp("(" + exp.second.toString + exp.first.toString + exp.cdr.cdr);
+         }
 
-      } else{
+      } else {
 
          return exp;
 
