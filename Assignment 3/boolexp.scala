@@ -171,6 +171,95 @@ class InfixExp(sexp: String) extends SExp(sexp: String){
 
    }
 
+   def realExp(): String={
+
+      return exp;
+
+   }
+
+   private def getRest(start: Int): String={
+
+      var depth = 0;
+      var result = "";
+
+      if (exp(start) != '('){
+
+         println("getRest must start with a '('");
+         return ""
+
+      }
+
+      for( i <- start until length()){
+
+         result += exp(i);
+
+         if (exp(i+1) == '('){
+
+            depth += 1;
+
+         } else if (exp(i+1) == ')'){
+
+            if (depth == 0){
+
+               return result + ")";
+
+            } else {
+
+               depth -= 1;
+
+            }
+
+         }
+
+      }
+
+      return "invalid list";
+
+   }
+
+   private def indexOf(index: Int): InfixExp={
+
+      var c = new InfixExp(exp.split(" +")(index));
+      if (c.toString()(0) == '('){
+
+         return new InfixExp(getRest(index));
+
+      }
+
+      return c;
+
+   }
+
+   override def car(): InfixExp={
+
+      return indexOf(0);
+
+   }
+
+   override def first(): InfixExp={
+
+      return car;
+
+   }
+
+   override def second(): InfixExp={
+
+      return cdr.car;
+
+   }
+
+   override def third(): InfixExp={
+
+      return cdr.cdr.car;
+
+   }
+
+   override def cdr(): InfixExp={
+
+      return new InfixExp("( " + exp.replaceFirst(car.toString,"").replace("()","") + " )");
+
+   }
+
 }
 
 object BoolExp{
@@ -179,9 +268,10 @@ object BoolExp{
 
       var p1 = SExp("(and x (or x (and y (not z))))");
       val p2 = SExp("(or (or nil y) (or (or x x) (or d nil)))");
-      val p3 = SExp("(or a (or a b))");
+      val p3 = new InfixExp("(x or (a or b))");
+      val p4 = new InfixExp("(x * ( y * ( !z ) ))");
 
-      println("final evaluation: " + evalCNF(evalExp(p1,new SExp("()")).toInfix));
+      println("final evaluation: " + evalCNF(p4));
       //runTests
 
    }
@@ -320,28 +410,85 @@ object BoolExp{
 
    private def evalCNF(exp: InfixExp): InfixExp={
 
+      println(exp)
+
       if (exp.isEmpty){
 
          return exp;
 
-      } else if (exp.isList){
+      }  else {
 
-         if(exp.first.toString == "or"){
+         if (exp.first.toString.toLowerCase == "not"){
 
-            println(exp.cdr.cdr.toAtom)
-            return evalCNF(new InfixExp("( " + exp.second.toString + " " + exp.first.toString + " " + exp.cdr.cdr.toAtom.toString + ")"))
+            if (exp.second.isList){
 
-         } else {
+               return (
+                  new InfixExp("not " +
+                     exp.second.first.toString + " " +
+                     exp.second.second.toString + " not " +
+                     exp.second.third.toString ))
 
-            return exp;
+            } else{
+
+               return new InfixExp(exp.toAtom.toString);
+
+            }
 
          }
 
-      } else {
+         if (exp.second.toString.toLowerCase == "or"){
 
-         return exp;
+            if (exp.third.first.toString.toLowerCase == "not"){
+
+               return  new InfixExp(exp.toAtom.toString)
+
+            } else if (exp.third.isList){
+
+               return (
+                  new InfixExp("(" +
+                  (if (exp.first.isList) evalCNF(exp.first).toString else exp.first.toString) + " " +
+                  exp.second.toString + " " +
+                  (if (exp.third.first.isList) evalCNF(exp.third.first).toString else exp.third.first.toString) + " ) and (" +
+                  (if (exp.first.isList) evalCNF(exp.first).toString else exp.first.toString) + " " +
+                  exp.second.toString + " " +
+                  (if (exp.third.third.isList) evalCNF(exp.third.third).toString else exp.third.third.toString) + " )"))
+
+            } else {
+
+               return exp
+
+            }
+
+         }
+
+         if (exp.third.first.toString.toLowerCase == "not"){
+
+            return new InfixExp(exp.toAtom.toString)
+
+         } else if (exp.second.toString.toLowerCase == "and"){
+
+            if (exp.third.isList){
+
+               return (
+                  new InfixExp("(" +
+                  (if (exp.first.isList) evalCNF(exp.first).toString else exp.first.toString) + " " +
+                  exp.second.toString + " " +
+                  (if (exp.third.first.isList) evalCNF(exp.third.first).toString else exp.third.first.toString) + " ) or (" +
+                  (if (exp.first.isList) evalCNF(exp.first).toString else exp.first.toString) + " " +
+                  exp.second.toString + " " +
+                  (if (exp.third.third.isList) evalCNF(exp.third.third).toString else exp.third.third.toString) + " )"))
+
+            }
+
+         } else {
+
+            return exp
+
+         }
 
       }
+
+      return exp
 
    }
 
