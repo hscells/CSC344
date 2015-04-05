@@ -71,9 +71,29 @@ case class SExp(sexp : String) extends Expression{
       return (
          if (first.toString != "not")
             (new InfixExp("(" +
-               (if (second.isList) second.toInfix else second.toString) + " " +
+               (if (second.isList)
+                  (if (second.first.toString == first.toString)
+                  (if (second.second.isList)
+                     second.second.toAtom.toInfix else
+                     second.second.toString) + " " + first.toString + " " +
+                  (if (second.third.isList)
+                     second.third.toAtom.toInfix else
+                     second.third.toString) else
+                  second.toAtom.toInfix) else
+               second.toAtom.toString) + " " +
+
                first.toString + " " +
-               (if (cdr.cdr.toAtom.isList) cdr.cdr.toAtom.toInfix else cdr.cdr.toAtom.toString) + ")"))
+
+               (if (third.toAtom.isList)
+                  ((if (third.first.toString == first.toString)
+                     (if (third.second.isList)
+                        third.second.toAtom.toInfix else
+                        third.second.toString) + " " + first.toString + " " +
+                     (if (third.third.isList)
+                        third.third.toAtom.toInfix else
+                        third.third.toString) else
+                     third.toAtom.toInfix)) else
+                  third.toString) + ")"))
          else (new InfixExp(exp))
       )
    }
@@ -121,7 +141,7 @@ case class SExp(sexp : String) extends Expression{
    private def indexOf(index: Int): SExp={
 
       var c = new SExp(exp.split(" +")(index));
-      if (c.toString()(0) == '('){
+      if (c.toString.length > 0 && c.toString()(0) == '('){
 
          return new SExp(getRest(index));
 
@@ -177,101 +197,19 @@ class InfixExp(sexp: String) extends SExp(sexp: String){
 
    }
 
-   private def getRest(start: Int): String={
-
-      var depth = 0;
-      var result = "";
-
-      if (exp(start) != '('){
-
-         println("getRest must start with a '('");
-         return ""
-
-      }
-
-      for( i <- start until length()){
-
-         result += exp(i);
-
-         if (exp(i+1) == '('){
-
-            depth += 1;
-
-         } else if (exp(i+1) == ')'){
-
-            if (depth == 0){
-
-               return result + ")";
-
-            } else {
-
-               depth -= 1;
-
-            }
-
-         }
-
-      }
-
-      return "invalid list";
-
-   }
-
-   private def indexOf(index: Int): InfixExp={
-
-      var c = new InfixExp(exp.split(" +")(index));
-      if (c.toString()(0) == '('){
-
-         return new InfixExp(getRest(index));
-
-      }
-
-      return c;
-
-   }
-
-   override def car(): InfixExp={
-
-      return indexOf(0);
-
-   }
-
-   override def first(): InfixExp={
-
-      return car;
-
-   }
-
-   override def second(): InfixExp={
-
-      return cdr.car;
-
-   }
-
-   override def third(): InfixExp={
-
-      return cdr.cdr.car;
-
-   }
-
-   override def cdr(): InfixExp={
-
-      return new InfixExp("( " + exp.replaceFirst(car.toString,"").replace("()","") + " )");
-
-   }
-
 }
 
 object BoolExp{
 
    def main(args: Array[String]){
 
-      var p1 = SExp("(and x (or x (and y (not z))))");
+      // (  x and (  (  w or y ) and (  w or z ) ) )
+      var p1 = SExp("(and y (not z))");
       val p2 = SExp("(or (or nil y) (or (or x x) (or d nil)))");
-      val p3 = new InfixExp("(x or (a or b))");
-      val p4 = new InfixExp("(x * ( y * ( !z ) ))");
+      val p3 = new InfixExp("(and x (not (or p q)))");
+      val p4 = new InfixExp("(and ())");
 
-      println("final evaluation: " + evalCNF(p4));
+      println("final evaluation: " + evalCNF(p1));
       //runTests
 
    }
@@ -408,87 +346,96 @@ object BoolExp{
 
    }
 
-   private def evalCNF(exp: InfixExp): InfixExp={
-
-      println(exp)
+   def evalCNF(exp: SExp): SExp={
 
       if (exp.isEmpty){
 
          return exp;
 
-      }  else {
+      } else if (!exp.isList){
 
-         if (exp.first.toString.toLowerCase == "not"){
+         return exp;
 
-            if (exp.second.isList){
+      } else {
 
-               return (
-                  new InfixExp("not " +
-                     exp.second.first.toString + " " +
-                     exp.second.second.toString + " not " +
-                     exp.second.third.toString ))
+         // (or a (and b c)) -> (and (or a b) (or a c))
+         // (not (or p q)) -> (or (not p) (not q))
 
-            } else{
+         if (exp.first.toString.toLowerCase == "or"){
 
-               return new InfixExp(exp.toAtom.toString);
+            return (distributeOr(new SExp("( or " +
+               (if(exp.second.isList) evalCNF(exp.second).toString else exp.second.toString) + " " +
+               (if(exp.third.isList) evalCNF(exp.third).toString else exp.third.toString) + ")")));
 
-            }
+         } else if (exp.first.toString.toLowerCase == "not"){
 
-         }
+            return (new SExp((if(exp.second.isList) distributeNot(exp).toString else exp.second.toString)));
 
-         if (exp.second.toString.toLowerCase == "or"){
+         } else if (exp.second.isList){
 
-            if (exp.third.first.toString.toLowerCase == "not"){
+            return new SExp("( " + exp.first.toString + " " + evalCNF(exp.second).toString + " " + exp.third.toString + ")")
 
-               return  new InfixExp(exp.toAtom.toString)
+         } else if (exp.third.isList){
 
-            } else if (exp.third.isList){
-
-               return (
-                  new InfixExp("(" +
-                  (if (exp.first.isList) evalCNF(exp.first).toString else exp.first.toString) + " " +
-                  exp.second.toString + " " +
-                  (if (exp.third.first.isList) evalCNF(exp.third.first).toString else exp.third.first.toString) + " ) and (" +
-                  (if (exp.first.isList) evalCNF(exp.first).toString else exp.first.toString) + " " +
-                  exp.second.toString + " " +
-                  (if (exp.third.third.isList) evalCNF(exp.third.third).toString else exp.third.third.toString) + " )"))
-
-            } else {
-
-               return exp
-
-            }
-
-         }
-
-         if (exp.third.first.toString.toLowerCase == "not"){
-
-            return new InfixExp(exp.toAtom.toString)
-
-         } else if (exp.second.toString.toLowerCase == "and"){
-
-            if (exp.third.isList){
-
-               return (
-                  new InfixExp("(" +
-                  (if (exp.first.isList) evalCNF(exp.first).toString else exp.first.toString) + " " +
-                  exp.second.toString + " " +
-                  (if (exp.third.first.isList) evalCNF(exp.third.first).toString else exp.third.first.toString) + " ) or (" +
-                  (if (exp.first.isList) evalCNF(exp.first).toString else exp.first.toString) + " " +
-                  exp.second.toString + " " +
-                  (if (exp.third.third.isList) evalCNF(exp.third.third).toString else exp.third.third.toString) + " )"))
-
-            }
-
-         } else {
-
-            return exp
+            return new SExp("( " + exp.first.toString + " " + exp.second.toString + " " + evalCNF(exp.third).toString + ")")
 
          }
 
       }
 
       return exp
+
+   }
+
+   private def distributeOr(exp: SExp): SExp={
+
+      // (or (and a b) (and c d)) -> (and (or a c) (or a c) (or c b) (or c d))
+
+      if (exp.second.first.toString.toLowerCase == "and" && exp.third.first.toString.toLowerCase == "and"){
+
+         return (new SExp("( and ( or " + exp.second.second.toString + " " + exp.third.second.toString +
+            ")(or " + exp.second.second.toString + " " + exp.third.third.toString +
+            ")(or " + exp.third.second.toString + " " + exp.second.third.toString +
+            ")(or " + exp.third.third.toString + " " + exp.second.third.toString +"))"));
+
+
+      } else if (exp.second.first.toString.toLowerCase == "and" && !exp.third.isList){
+
+         return (new SExp("( and ( or " + exp.third.toString + " " + exp.second.second.toString +
+            ")(or " + exp.third.toString + " " + exp.second.third.toString + "))"));
+
+      } else if (exp.third.first.toString.toLowerCase == "and" && !exp.second.isList){
+
+         return (new SExp("( and ( or " + exp.second.toString + " " + exp.third.second.toString +
+            ")(or " + exp.second.toString + " " + exp.third.third.toString + "))"));
+
+      } else {
+
+         return exp;
+
+      }
+
+   }
+
+   private def distributeNot(exp: SExp): SExp={
+
+      if (exp.second.first.toString.toLowerCase == "or"){
+
+         return (new SExp("( and (not " +
+         (if (exp.second.second.isList) evalCNF(exp.second.second).toString else exp.second.second.toString) + ") (not " +
+         exp.second.third.toString + "))"))
+
+      } else if (exp.second.first.toString.toLowerCase == "and"){
+
+         return (new SExp("( or (not " +
+         (if (exp.second.second.isList) evalCNF(exp.second.second).toString else exp.second.second.toString) + ") (not " +
+         exp.second.third.toString + "))"))
+
+      } else {
+
+         return exp
+
+      }
 
    }
 
