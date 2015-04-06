@@ -66,36 +66,22 @@ case class SExp(sexp : String) extends Expression{
 
    }
 
-   def toInfix(): InfixExp={
+   def toInfix(): SExp={
 
       return (
          if (first.toString != "not")
-            (new InfixExp("(" +
-               (if (second.isList)
-                  (if (second.first.toString == first.toString)
-                  (if (second.second.isList)
-                     second.second.toAtom.toInfix else
-                     second.second.toString) + " " + first.toString + " " +
-                  (if (second.third.isList)
-                     second.third.toAtom.toInfix else
-                     second.third.toString) else
-                  second.toAtom.toInfix) else
-               second.toAtom.toString) + " " +
-
+            new SExp(
+               "(" +
+               (if (second.isList) second.toInfix.toAtom.toString else second.toString) + " " +
                first.toString + " " +
+               (if (third.isList) third.toInfix.toAtom.toString else third.toString) +
+               ")"
+            )
+         else
+            new SExp(
+               "(" + (if (second.isList) "(not (" + second.toInfix.toAtom.toString + "))" else str_exp) + ")"
+            ))
 
-               (if (third.toAtom.isList)
-                  ((if (third.first.toString == first.toString)
-                     (if (third.second.isList)
-                        third.second.toAtom.toInfix else
-                        third.second.toString) + " " + first.toString + " " +
-                     (if (third.third.isList)
-                        third.third.toAtom.toInfix else
-                        third.third.toString) else
-                     third.toAtom.toInfix)) else
-                  third.toString) + ")"))
-         else (new InfixExp(exp))
-      )
    }
 
    private def getRest(start: Int): String={
@@ -204,12 +190,20 @@ object BoolExp{
    def main(args: Array[String]){
 
       // (  x and (  (  w or y ) and (  w or z ) ) )
-      var p1 = SExp("(and y (not z))");
+      var p1 = SExp("(or (and x y) (and a b))");
       val p2 = SExp("(or (or nil y) (or (or x x) (or d nil)))");
-      val p3 = new InfixExp("(and x (not (or p q)))");
-      val p4 = new InfixExp("(and ())");
+      val p3 = new SExp("(or x (or w (or y (not z))))");
+      val p6 = new SExp("(or y (not z))");
+      val p4 = new SExp("(or a (and (not b) (not c)))");
+      val p5 = new SExp("(not z)");
 
-      println("final evaluation: " + evalCNF(p1));
+      var bindings = new SExp("( )")
+      val e = p1
+
+      println("expression: " + e)
+      println("simplified: " + evalExp(e,bindings));
+      println("CNF       : " + evalCNF(evalExp(e,bindings)));
+      println("infix     : " + evalCNF(evalExp(e,bindings)).toInfix.toAtom);
       //runTests
 
    }
@@ -369,7 +363,11 @@ object BoolExp{
 
          } else if (exp.first.toString.toLowerCase == "not"){
 
-            return (new SExp((if(exp.second.isList) distributeNot(exp).toString else exp.second.toString)));
+            return (new SExp((if(exp.second.isList) distributeNot(exp).toString else exp.toString)));
+
+         } else if (exp.second.isList && exp.third.isList){
+
+            return new SExp("( " + exp.first.toString + " " + evalCNF(exp.second).toString + " " + evalCNF(exp.third).toString + ")")
 
          } else if (exp.second.isList){
 
@@ -379,11 +377,13 @@ object BoolExp{
 
             return new SExp("( " + exp.first.toString + " " + exp.second.toString + " " + evalCNF(exp.third).toString + ")")
 
+         } else {
+
+            return exp
+
          }
 
       }
-
-      return exp
 
    }
 
@@ -394,9 +394,9 @@ object BoolExp{
       if (exp.second.first.toString.toLowerCase == "and" && exp.third.first.toString.toLowerCase == "and"){
 
          return (new SExp("( and ( or " + exp.second.second.toString + " " + exp.third.second.toString +
-            ")(or " + exp.second.second.toString + " " + exp.third.third.toString +
-            ")(or " + exp.third.second.toString + " " + exp.second.third.toString +
-            ")(or " + exp.third.third.toString + " " + exp.second.third.toString +"))"));
+            ")(and (or " + exp.second.second.toString + " " + exp.third.third.toString +
+            ")(and (or " + exp.third.second.toString + " " + exp.second.third.toString +
+            ")(or " + exp.third.third.toString + " " + exp.second.third.toString +"))))"));
 
 
       } else if (exp.second.first.toString.toLowerCase == "and" && !exp.third.isList){
