@@ -68,18 +68,20 @@ case class SExp(sexp : String) extends Expression{
 
    def toInfix(): SExp={
 
+      println(exp)
+
       return (
          if (first.toString != "not")
             new SExp(
                "(" +
-               (if (second.isList) second.toInfix.toAtom.toString else second.toString) + " " +
+               (if (second.isList) if (second.toString.split(" +").length <=5) second.toInfix.toString else second.toInfix.toAtom.toString else second.toString) + " " +
                first.toString + " " +
-               (if (third.isList) third.toInfix.toAtom.toString else third.toString) +
+               (if (third.isList) if (third.toString.split(" +").length <=5) third.toInfix.toString else third.toInfix.toAtom.toString else third.toString) +
                ")"
             )
          else
             new SExp(
-               "(" + (if (second.isList) "(not (" + second.toInfix.toAtom.toString + "))" else str_exp) + ")"
+               if (second.isList) "(not (" + second.toInfix.toAtom.toString + "))" else str_exp
             ))
 
    }
@@ -196,9 +198,10 @@ object BoolExp{
       val p6 = new SExp("(or y (not z))");
       val p4 = new SExp("(or a (and (not b) (not c)))");
       val p5 = new SExp("(not z)");
+      val p7 = new SExp("(or a (and b c))");
 
       var bindings = new SExp("( )")
-      val e = p1
+      val e = p7
 
       println("expression: " + e)
       println("simplified: " + evalExp(e,bindings));
