@@ -68,21 +68,50 @@ case class SExp(sexp : String) extends Expression{
 
    def toInfix(): SExp={
 
-      println(exp)
+      var r = List[String]();
+
+      var q = infixIt.toString()
+
+      if (q(0) == '(' && q(q.length-1) == ')'){
+
+         q = q.dropRight(1).reverse.dropRight(1).reverse
+
+      }
+
+
+      for (i <- q.split("and")){
+
+         var t = i
+         if (t(0) == '(') t=t.reverse.dropRight(1).reverse
+         if (t(t.length-1) == ')') t=t.dropRight(1)
+         t = t.dropWhile(_ == ' ').reverse.dropWhile(_ == ' ').reverse
+         //println(i.dropWhile(_ == ' ').reverse.dropWhile(_ == ' ').reverse.split(" +").mkString(","))
+         r :+=  (if(t.split(" ").length > 1) " [ " + t + " ] " else " " + t + " ")
+
+      }
+
+      return ( if (SExp(r.mkString("and")).isList) SExp(r.mkString("and").replace("[","(").replace("]",")")).toAtom else SExp(r.mkString("and").replace("[","(").replace("]",")")))
+
+   }
+
+   private def infixIt(): SExp={
 
       return (
-         if (first.toString != "not")
+         if (first.toString != "not" && str_exp != "nil" && str_exp != "t")
             new SExp(
                "(" +
-               (if (second.isList) if (second.toString.split(" +").length <=5) second.toInfix.toString else second.toInfix.toAtom.toString else second.toString) + " " +
+               (if (second.isList) second.infixIt.toAtom.toString else second.toString) + " " +
                first.toString + " " +
-               (if (third.isList) if (third.toString.split(" +").length <=5) third.toInfix.toString else third.toInfix.toAtom.toString else third.toString) +
+               (if (third.isList) third.infixIt.toAtom.toString else third.toString) +
                ")"
             )
          else
-            new SExp(
-               if (second.isList) "(not (" + second.toInfix.toAtom.toString + "))" else str_exp
-            ))
+            if (first.toString == "not")
+               (new SExp(
+                  if (second.isList) "(not (" + second.infixIt.toAtom.toString + "))" else str_exp
+               ))
+            else
+               new SExp(str_exp))
 
    }
 
@@ -192,21 +221,26 @@ object BoolExp{
    def main(args: Array[String]){
 
       // (  x and (  (  w or y ) and (  w or z ) ) )
-      var p1 = SExp("(or (and x y) (and a b))");
-      val p2 = SExp("(or (or nil y) (or (or x x) (or d nil)))");
-      val p3 = new SExp("(or x (or w (or y (not z))))");
-      val p6 = new SExp("(or y (not z))");
-      val p4 = new SExp("(or a (and (not b) (not c)))");
+      var p1 = new SExp("(and x (or x (and y (not z)))))");
+      val p2 = new SExp("(and (and z x) (or w (not y))))");
+      val p3 = new SExp("(or 1 a))");
+      val p6 = new SExp("(and a (not (or y (not z))))");
+      val p4 = new SExp("(or a (and c (not (or x y))))");
       val p5 = new SExp("(not z)");
-      val p7 = new SExp("(or a (and b c))");
+      val p7 = new SExp("(or a (and b c)) ");
+      val p8 = new SExp("( and ( and x j ) ( or d 6 ) )");
+      val p9 = new SExp("( or ( and x y) ( and a (not b) ) )");
 
-      var bindings = new SExp("( )")
-      val e = p7
+      val scanner = new java.util.Scanner(System.in)
+      //print("bindings >")
+      //var bindings = new SExp(scanner.nextLine)
+      var bindings = new SExp("()")
+      val e = p4
 
-      println("expression: " + e)
+      println("expression: " + substituteExp(e,bindings))
       println("simplified: " + evalExp(e,bindings));
       println("CNF       : " + evalCNF(evalExp(e,bindings)));
-      println("infix     : " + evalCNF(evalExp(e,bindings)).toInfix.toAtom);
+      println("infix     : " + evalCNF(evalExp(e,bindings)).toInfix);
       //runTests
 
    }
@@ -422,21 +456,33 @@ object BoolExp{
 
    private def distributeNot(exp: SExp): SExp={
 
+      var re = ""
       if (exp.second.first.toString.toLowerCase == "or"){
 
-         return (new SExp("( and (not " +
-         (if (exp.second.second.isList) evalCNF(exp.second.second).toString else exp.second.second.toString) + ") (not " +
-         exp.second.third.toString + "))"))
+         re = "and"
 
       } else if (exp.second.first.toString.toLowerCase == "and"){
 
-         return (new SExp("( or (not " +
-         (if (exp.second.second.isList) evalCNF(exp.second.second).toString else exp.second.second.toString) + ") (not " +
-         exp.second.third.toString + "))"))
+         re = "or"
+
+      }
+      if (exp.second.third.first.toString.toLowerCase == "not"){
+
+         return (new SExp("( " + re + " (not " +
+         (if (exp.second.second.isList) evalCNF(exp.second.second).toString else exp.second.second.toString) + ") " +
+         exp.second.third.second.toString + ")"))
+
+      } else if (exp.second.second.first.toString.toLowerCase == "not"){
+
+         return (new SExp("( " + re + " " +
+         exp.second.second.second.toString + "(not " +
+         (if (exp.second.third.isList) evalCNF(exp.second.third).toString else exp.second.third.toString) + "))"))
 
       } else {
 
-         return exp
+         return (new SExp("( " + re + " (not " +
+         (if (exp.second.second.isList) evalCNF(exp.second.second).toString else exp.second.second.toString) + ") (not " +
+         exp.second.third.toString + "))"))
 
       }
 
