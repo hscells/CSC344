@@ -230,12 +230,14 @@ object BoolExp{
       val p7 = new SExp("(or a (and b c)) ");
       val p8 = new SExp("( and ( and x j ) ( or d 6 ) )");
       val p9 = new SExp("( or ( and x y) ( and a (not b) ) )");
+      val p10 = new SExp("(and a (not (and a (not (or b c)))))");
 
       val scanner = new java.util.Scanner(System.in)
-      //print("bindings >")
-      //var bindings = new SExp(scanner.nextLine)
-      var bindings = new SExp("()")
-      val e = p4
+
+      print("bindings >")
+      var bindings = new SExp(scanner.nextLine)
+      //var bindings = new SExp("()")
+      val e = p10
 
       println("expression: " + substituteExp(e,bindings))
       println("simplified: " + evalExp(e,bindings));
