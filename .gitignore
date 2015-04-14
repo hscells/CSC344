@@ -30,3 +30,5 @@
 *.txt
 parse
 *.class
+familytree.prolog
+rooms.prolog
