@@ -3,8 +3,10 @@
  * Harry Scells 2015
  * CSC344 SUNY Oswego
  */
- cdr([_|T],T).
- car([H|_],H).
+cdr([_|T],T).
+car([H|_],H).
+empty(L):- length(L,A), not(A > 0).
+strcmp(A,B,R):- not(A \= B) -> R = true, ! ; R = false, !.
 
 % make some predicates to type check
 boolean(X):- X = true, ! | X = fals | X = boolean, !.
@@ -45,26 +47,27 @@ def(add,[int,int]).
 
 inherited(C,P):- bind(C,P), bind(P,X), X = class.
 
-% Infer the values of single types
-infer(X,T):- bind(X,Y), type(Y,T), !.
-% Infer if the arguments in a function are correct
-infer(X,A):-
-   % while the length of the args is > 0
-   length(A,Q), Q > 0,
-   % get the bound argument list
-   def(X,L),
-   infer(X,A,L).
+inferargs([],[]):- true, !.
 
-infer(A,L):-
+inferargs(A,L):-
    % while the length of the args is > 0
    length(A,Q), Q > 0,
    car(A,A1), type(A1,T),
    car(L,L1), type(L1,R),
-
-   write(T = R),
-
+   strcmp(T,R,E),
+   E == true,
    cdr(A,A2), cdr(L,L2),
-   infer(A2,L2).
+   inferargs(A2,L2), !.
+
+% Infer if the arguments in a function are correct
+infer(X,A):-
+   % get the bound argument list
+   def(X,L),
+   % while the length of the args is > 0
+   length(A,Q), Q > 0,
+   inferargs(A,L), !.
+% Infer the values of single types
+infer(X,T):- bind(X,Y), type(Y,T), !.
 
 % Infer the values of inherited types
 infer(X,Y,T):- bind(X,Y,Z), bind(X,class), type(Z,T), !.
